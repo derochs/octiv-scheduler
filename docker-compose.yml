@@ -2,11 +2,7 @@ services:
   octiv-booker:
     build: .
     restart: unless-stopped
-    environment:
-      - OCTIV_EMAIL=${OCTIV_EMAIL}
-      - OCTIV_PASSWORD=${OCTIV_PASSWORD}
-      - DISCOVERY_CRON=${DISCOVERY_CRON:-0 4 * * *}
-      - DRY_RUN=${DRY_RUN:-false}
+    env_file: .env
     volumes:
       - ./logs:/app/logs # if we add file logging later
       - ./wishlist.json:/app/wishlist.json
