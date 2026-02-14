@@ -1,0 +1,11 @@
+services:
+  octiv-booker:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    # environment:
+    #   - TZ=Europe/Berlin # useful for cron
+    volumes:
+      - ./logs:/app/logs # if we add file logging later
+      - ./wishlist.json:/app/wishlist.json
