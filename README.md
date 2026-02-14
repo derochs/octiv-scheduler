@@ -25,20 +25,18 @@ Automated class booking system for Octiv Fitness.
    cd octiv-scheduler
    ```
 
-2. **Configure environment variables**
+2. **Set environment variables**
+
+   Export your Octiv credentials and configuration:
 
    ```bash
-   cp .env.example .env
+   export OCTIV_EMAIL=your-email@example.com
+   export OCTIV_PASSWORD=your-password
+   export DISCOVERY_CRON="0 4 * * *"  # Optional: defaults to 4 AM daily
+   export DRY_RUN=true                # Optional: defaults to true
    ```
 
-   Edit `.env` and add your credentials:
-
-   ```env
-   OCTIV_EMAIL=your-email@example.com
-   OCTIV_PASSWORD=your-password
-   DISCOVERY_CRON=0 4 * * *
-   DRY_RUN=true
-   ```
+   > **Note:** For production use, consider using a secrets management system or your CI/CD platform's environment variable features instead of storing credentials in files.
 
 3. **Configure your wishlist**
 
