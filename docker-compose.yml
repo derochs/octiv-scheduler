@@ -1,5 +1,6 @@
 services:
   octiv-booker:
+    container_name: octiv-scheduler
     build: .
     restart: unless-stopped
     env_file: .env
