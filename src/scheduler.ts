@@ -21,7 +21,7 @@ export class DiscoveryScheduler {
     try {
       await this.client.authenticate();
       const wishlist = await loadWishlist();
-      console.log(`Found ${wishlist.length} rules in wishlist.`);
+      console.log(`Found ${wishlist.length} rules in wishlist:`);
       console.log(JSON.stringify(wishlist, null, 2));
       const datesResult = computeStartAndEndDate(wishlist);
       if (!datesResult) {
@@ -41,6 +41,10 @@ export class DiscoveryScheduler {
           datesResult.startDate,
           datesResult.endDate,
         );
+      console.log(
+        `Found ${availableClassesForDateRange.length} classes in range:`,
+      );
+      console.log(JSON.stringify(availableClassesForDateRange, null, 2));
 
       const confirmedWishlist: (WishlistRule & { id: number })[] = wishlist
         .map((rule) => {
@@ -54,7 +58,7 @@ export class DiscoveryScheduler {
         .filter((item): item is WishlistRule & { id: number } => item !== null);
 
       console.log(
-        `Found ${confirmedWishlist.length} matching wishlist items out of ${wishlist.length} rules.`,
+        `Matched ${confirmedWishlist.length} classes out of ${wishlist.length} rules.`,
       );
       console.log(JSON.stringify(confirmedWishlist, null, 2));
 
