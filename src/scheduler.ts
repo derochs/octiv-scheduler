@@ -35,8 +35,6 @@ export class DiscoveryScheduler {
         this.scheduledJobs.clear();
         return;
       }
-      console.log(`Start date: ${datesResult.startDate.toISOString()}`);
-      console.log(`End date: ${datesResult.endDate.toISOString()}`);
 
       const availableClassesForDateRange =
         await this.client.fetchClassesForRange(
@@ -81,7 +79,7 @@ export class DiscoveryScheduler {
 
         if (bookingTime <= new Date()) {
           console.log(
-            `Booking time for class ${item.id} has passed. Booking immediately.`,
+            `Class ${item.id} can be booked immediately. Attempting to book...`,
           );
           await this.client.bookClass(item.id.toString());
         } else {
@@ -95,7 +93,9 @@ export class DiscoveryScheduler {
           );
           const scheduledTime = new Date(bookingTime.getTime() + 3000);
           const job = schedule.scheduleJob(scheduledTime, async () => {
-            console.log(`Executing scheduled booking for class ${item.id}...`);
+            console.log(
+              `[${new Date().toISOString()}] Executing scheduled booking for class ${item.id}...`,
+            );
             await this.client.bookClass(item.id.toString());
             this.scheduledJobs.delete(item.id);
           });

@@ -173,7 +173,7 @@ export class OctivClient {
 
   async bookClass(classDateId: string): Promise<void> {
     if (config.dryRun) {
-      console.log(`Would book class ${classDateId}...`);
+      console.log(`[DRY RUN] Would book class ${classDateId}...`);
       return;
     }
     try {
