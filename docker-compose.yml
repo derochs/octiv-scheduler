@@ -4,6 +4,7 @@ services:
     build: .
     restart: unless-stopped
     environment:
+      - TZ=Europe/Berlin
       - OCTIV_EMAIL=${OCTIV_EMAIL}
       - OCTIV_PASSWORD=${OCTIV_PASSWORD}
       - DISCOVERY_CRON=${DISCOVERY_CRON:-0 4 * * *}

@@ -34,6 +34,7 @@ Automated class booking system for Octiv Fitness.
    export OCTIV_PASSWORD=your-password
    export DISCOVERY_CRON="0 4 * * *"  # Optional: defaults to 4 AM daily
    export DRY_RUN=true                # Optional: defaults to true
+   export TZ="Europe/Berlin"          # Optional: defaults to UTC (Important for correct time matching)
    ```
 
    > **Note:** For production use, consider using a secrets management system or your CI/CD platform's environment variable features instead of storing credentials in files.
@@ -67,6 +68,7 @@ Automated class booking system for Octiv Fitness.
 - `OCTIV_PASSWORD` - Your Octiv Fitness account password (required)
 - `DISCOVERY_CRON` - Cron schedule for discovery runs (default: `0 4 * * *` - daily at 4 AM). Scans your wishlist and schedules bookings for upcoming classes or books immediately if the booking window is already open.
 - `DRY_RUN` - Set to `true` to simulate bookings without actually booking them (default: `true`)
+- `TZ` - Timezone for the application (e.g., `Europe/Berlin`). Important to match Octiv's local class times with your wishlist. Defaults to `UTC`.
 
 #### Wishlist Format
 

@@ -155,7 +155,8 @@ export class OctivClient {
           perPage: -1,
         },
       });
-      console.log(`Classes fetched successfully.`);
+      console.log(`Classes fetched successfully:`);
+      console.log(JSON.stringify(response.data.data, null, 2));
       return response.data.data.map((item: any) => ({
         id: item.id,
         name: item.class ? item.class.name : item.name,
