@@ -13,7 +13,8 @@ Automated class booking system for Octiv Fitness.
 
 ### Prerequisites
 
-- Docker and Docker Compose installed
+- Node.js and npm / yarn installed
+- (Optional) Docker and Docker Compose installed
 - Octiv Fitness account credentials
 
 ### Setup
@@ -109,6 +110,39 @@ Simply edit `wishlist.json` - the service will automatically detect changes and 
    - If booking time has passed → books immediately
    - If booking time is in the future → schedules a job
 4. **Watching**: Monitors `wishlist.json` for changes and updates schedules accordingly
+
+## Manual Deployment (Node.js)
+
+If you prefer to run the application directly with Node.js instead of Docker:
+
+1. **Prerequisites**
+   - Node.js (v18+ recommended)
+   - Yarn package manager
+
+2. **Installation**
+
+   ```bash
+   yarn install
+   ```
+
+3. **Configuration**
+
+   Create a `.env` file in the root directory or export environment variables:
+
+   ```bash
+   export OCTIV_EMAIL=your-email@example.com
+   export OCTIV_PASSWORD=your-password
+   export DISCOVERY_CRON=0 4 * * *
+   export TZ="Europe/Berlin"
+   ```
+
+4. **Run**
+
+   ```bash
+   yarn start
+   ```
+
+   For a long-running process, you can use `screen`, `tmux`, or a process manager like `pm2`.
 
 ## Development
 
