@@ -89,9 +89,9 @@ export class DiscoveryScheduler {
           }
 
           console.log(
-            `Scheduling booking for class ${item.id} at ${bookingTime.toISOString()} (with 3s buffer)`,
+            `Scheduling booking for class ${item.id} at ${bookingTime.toISOString()} (with buffer)`,
           );
-          const scheduledTime = new Date(bookingTime.getTime() + 3000);
+          const scheduledTime = new Date(bookingTime.getTime() + 1000);
           const job = schedule.scheduleJob(scheduledTime, async () => {
             console.log(
               `[${new Date().toISOString()}] Executing scheduled booking for class ${item.id}...`,
