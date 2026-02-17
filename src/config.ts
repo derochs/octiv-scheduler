@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { logger } from './logger.js';
 dotenv.config();
 
 export const config = {
@@ -12,7 +13,7 @@ export const config = {
 };
 
 if (!config.email || !config.password) {
-  console.error(
+  logger.error(
     'Missing OCTIV_EMAIL or OCTIV_PASSWORD in environment variables.',
   );
   process.exit(1);

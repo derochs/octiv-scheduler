@@ -2,6 +2,7 @@ import chokidar from 'chokidar';
 import path from 'path';
 
 import fs from 'fs/promises';
+import { logger } from './logger.js';
 
 export interface WishlistRule {
   className: string;
@@ -24,7 +25,7 @@ export async function loadWishlist(): Promise<WishlistRule[]> {
       (rule) => rule.classDateUtc.getTime() > currentDate.getTime(),
     );
   } catch (error) {
-    console.warn('Failed to load wishlist.json, using empty list.', error);
+    logger.warn('Failed to load wishlist.json, using empty list.', error);
     return [];
   }
 }
@@ -32,7 +33,7 @@ export async function loadWishlist(): Promise<WishlistRule[]> {
 export function watchWishlist(onChange: () => void) {
   const wishlistPath = path.resolve(process.cwd(), 'wishlist.json');
 
-  console.log(`Watching for changes in: ${wishlistPath}`);
+  logger.info(`Watching for changes in: ${wishlistPath}`);
 
   const watcher = chokidar.watch(wishlistPath, {
     persistent: true,
@@ -44,12 +45,12 @@ export function watchWishlist(onChange: () => void) {
   });
 
   watcher.on('change', () => {
-    console.log('Wishlist configuration changed. Refreshing...!');
+    logger.info('Wishlist configuration changed. Refreshing...!');
     onChange();
   });
 
   watcher.on('error', (error) => {
-    console.error('Watcher error:', error);
+    logger.error('Watcher error:', error);
   });
 }
 

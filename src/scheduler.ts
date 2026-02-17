@@ -1,5 +1,6 @@
-import { subHours } from 'date-fns';
+import { format, subHours } from 'date-fns';
 import schedule from 'node-schedule';
+import { logger } from './logger.js';
 import { OctivClient } from './octiv-client.js';
 import {
   computeStartAndEndDate,
@@ -16,21 +17,20 @@ export class DiscoveryScheduler {
   }
 
   async runDiscovery() {
-    console.log(`[${new Date().toISOString()}] Running discovery loop...`);
+    logger.info('Running discovery loop...');
 
     try {
       await this.client.authenticate();
       const wishlist = await loadWishlist();
-      console.log(`Found ${wishlist.length} outstanding rules in wishlist:`);
-      console.log(JSON.stringify(wishlist, null, 2));
+      logger.info(`Found ${wishlist.length} outstanding rules in wishlist:`);
       const datesResult = computeStartAndEndDate(wishlist);
       if (!datesResult) {
-        console.log(
+        logger.info(
           `No outstanding rules found in wishlist. Cancelling all scheduled jobs.`,
         );
         for (const [scheduledId, job] of this.scheduledJobs.entries()) {
           job.cancel();
-          console.log(`Cancelled job for class ${scheduledId}`);
+          logger.info(`Cancelled job for class ${scheduledId}`);
         }
         this.scheduledJobs.clear();
         return;
@@ -41,7 +41,7 @@ export class DiscoveryScheduler {
           datesResult.startDate,
           datesResult.endDate,
         );
-      console.log(
+      logger.info(
         `Found ${availableClassesForDateRange.length} classes in range:`,
       );
 
@@ -56,16 +56,17 @@ export class DiscoveryScheduler {
         })
         .filter((item): item is WishlistRule & { id: number } => item !== null);
 
-      console.log(
+      logger.info(
         `Matched ${confirmedWishlist.length} classes out of ${wishlist.length} rules.`,
       );
+      logger.info('Confirmed Wishlist:', confirmedWishlist);
 
       for (const [scheduledId, job] of this.scheduledJobs.entries()) {
         const stillInWishlist = confirmedWishlist.some(
           (item) => item.id === scheduledId,
         );
         if (!stillInWishlist) {
-          console.log(
+          logger.info(
             `Class ${scheduledId} is no longer in the wishlist. Cancelling scheduled booking.`,
           );
           job.cancel();
@@ -75,28 +76,30 @@ export class DiscoveryScheduler {
 
       for (const item of confirmedWishlist) {
         const bookingTime = subHours(item.classDateUtc, item.hoursBefore);
-        console.log(
-          `Class ${item.className} at ${item.classDateUtc.toISOString()} should be booked at ${bookingTime.toISOString()}`,
+        logger.info(
+          `[${item.id}] Class ${item.className} at ${format(item.classDateUtc, 'yyyy-MM-dd HH:mm:ss')} should be booked at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
         );
 
         if (bookingTime <= new Date()) {
-          console.log(
-            `Class ${item.id} can be booked immediately. Attempting to book...`,
+          logger.info(
+            `[${item.id}] Class ${item.className} can be booked immediately. Attempting to book...`,
           );
           await this.client.bookClass(item.id.toString());
         } else {
           if (this.scheduledJobs.has(item.id)) {
-            console.log(`Job for class ${item.id} is already scheduled.`);
+            logger.info(
+              `[${item.id}] Job for class ${item.className} is already scheduled.`,
+            );
             continue;
           }
 
-          console.log(
-            `Scheduling booking for class ${item.id} at ${bookingTime.toISOString()} (with buffer)`,
+          logger.info(
+            `[${item.id}] ⏱️ Scheduling booking for class ${item.className} at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
           );
-          const scheduledTime = new Date(bookingTime.getTime() + 1000);
+          const scheduledTime = new Date(bookingTime.getTime() + 500);
           const job = schedule.scheduleJob(scheduledTime, async () => {
-            console.log(
-              `[${new Date().toISOString()}] Executing scheduled booking for class ${item.id}...`,
+            logger.info(
+              `[${item.id}] 🚀 Executing scheduled booking for class ${item.className}...`,
             );
             await this.client.bookClass(item.id.toString());
             this.scheduledJobs.delete(item.id);
@@ -105,7 +108,7 @@ export class DiscoveryScheduler {
         }
       }
     } catch (error) {
-      console.error('Discovery failed:', error);
+      logger.error('Discovery failed:', error);
     }
   }
 }

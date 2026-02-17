@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { config } from './config.js';
+import { logger } from './logger.js';
 
 export interface Class {
   id: number;
@@ -63,7 +64,7 @@ export class OctivClient {
           this.isRefreshing = true;
 
           try {
-            console.log('Token expired, re-authenticating...');
+            logger.warn('Token expired, re-authenticating...');
             this.accessToken = null;
             await this.authenticate();
             const newToken = this.accessToken;
@@ -101,7 +102,7 @@ export class OctivClient {
     }
 
     try {
-      console.log(`Authenticating as ${config.email}...`);
+      logger.info(`Authenticating as ${config.email}...`);
       const loginResponse = await this.client.post('/login', {
         username: config.email,
         password: config.password,
@@ -112,9 +113,9 @@ export class OctivClient {
       if (!this.accessToken) {
         throw new Error('No token found in login response');
       }
-      console.log('Authentication successful.');
+      logger.info('Authentication successful.');
 
-      console.log(`Fetching me...`);
+      logger.debug(`Fetching me...`);
       const meResponse = await this.client.get('/users/me');
 
       this.userId = meResponse.data.id;
@@ -124,11 +125,11 @@ export class OctivClient {
       if (!this.userId || !this.tenantId || !this.locationId) {
         throw new Error('No user ID or tenant ID found in me response');
       }
-      console.log(
+      logger.info(
         `User details retrieved successfully. User ID: ${this.userId}, Tenant ID: ${this.tenantId}, Location ID: ${this.locationId}`,
       );
     } catch (error: any) {
-      console.error(
+      logger.error(
         'Authentication failed:',
         error.response?.data || error.message,
       );
@@ -140,7 +141,7 @@ export class OctivClient {
     try {
       const formattedStartDate = startDate.toISOString().split('T')[0];
       const formattedEndDate = endDate.toISOString().split('T')[0];
-      console.log(
+      logger.info(
         `Fetching classes for range ${formattedStartDate} to ${formattedEndDate}...`,
       );
       const response = await this.client.get('/class-dates', {
@@ -153,7 +154,7 @@ export class OctivClient {
           perPage: -1,
         },
       });
-      console.log(`Classes fetched successfully:`);
+      logger.debug(`Classes fetched successfully:`);
       return response.data.data.map((item: any) => ({
         id: item.id,
         name: item.class ? item.class.name : item.name,
@@ -161,7 +162,7 @@ export class OctivClient {
         limit: item.limit,
       }));
     } catch (error: any) {
-      console.error(
+      logger.error(
         `Fetching classes for range ${startDate} to ${endDate} failed:`,
         error.response?.data || error.message,
       );
@@ -171,21 +172,24 @@ export class OctivClient {
 
   async bookClass(classDateId: string): Promise<void> {
     if (config.dryRun) {
-      console.log(`[DRY RUN] Would book class ${classDateId}...`);
+      logger.info(`[DRY RUN] Would book class ${classDateId}...`);
       return;
     }
     try {
-      console.log(`Booking class ${classDateId}...`);
+      logger.info(`[${classDateId}] ✏️ Booking class...`);
       await this.client.post('/class-bookings', {
         classDateId,
         userId: this.userId,
       });
-      console.log(`Class ${classDateId} booked successfully.`);
+      logger.info(`[${classDateId}] ✅ Class booked successfully.`);
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
-        console.log(`${error.status}: ${error.response?.data?.message}`);
+        logger.error(
+          `[${classDateId}] ${error.status}: ${error.response?.data?.message}`,
+        );
+      } else {
+        logger.error(`[${classDateId}] ${error}`);
       }
-      throw new Error('Booking failed');
     }
   }
 }
