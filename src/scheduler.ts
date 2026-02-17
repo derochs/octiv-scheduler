@@ -77,29 +77,29 @@ export class DiscoveryScheduler {
       for (const item of confirmedWishlist) {
         const bookingTime = subHours(item.classDateUtc, item.hoursBefore);
         logger.info(
-          `[${item.id}] Class ${item.className} at ${format(item.classDateUtc, 'yyyy-MM-dd HH:mm:ss')} should be booked at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
+          `[${item.id}] Class "${item.className}" at ${format(item.classDateUtc, 'yyyy-MM-dd HH:mm:ss')} should be booked at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
         );
 
         if (bookingTime <= new Date()) {
           logger.info(
-            `[${item.id}] Class ${item.className} can be booked immediately. Attempting to book...`,
+            `[${item.id}] Class "${item.className}" can be booked immediately. Attempting to book...`,
           );
           await this.client.bookClass(item.id.toString());
         } else {
           if (this.scheduledJobs.has(item.id)) {
             logger.info(
-              `[${item.id}] Job for class ${item.className} is already scheduled.`,
+              `[${item.id}] Job for class "${item.className}" is already scheduled.`,
             );
             continue;
           }
 
           logger.info(
-            `[${item.id}] ⏱️ Scheduling booking for class ${item.className} at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
+            `[${item.id}] ⏱️ Scheduling booking for class "${item.className}" at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
           );
           const scheduledTime = new Date(bookingTime.getTime() + 500);
           const job = schedule.scheduleJob(scheduledTime, async () => {
             logger.info(
-              `[${item.id}] 🚀 Executing scheduled booking for class ${item.className}...`,
+              `[${item.id}] 🚀 Executing scheduled booking for class "${item.className}"...`,
             );
             await this.client.bookClass(item.id.toString());
             this.scheduledJobs.delete(item.id);
