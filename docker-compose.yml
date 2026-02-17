@@ -1,7 +1,9 @@
 services:
   octiv-booker:
     container_name: octiv-scheduler
-    build: .
+    build:
+      context: .
+      target: builder
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -10,5 +12,9 @@ services:
       - DISCOVERY_CRON=${DISCOVERY_CRON:-0 4 * * *}
       - DRY_RUN=${DRY_RUN:-true}
     volumes:
-      - ./logs:/app/logs # if we add file logging later
+      - ./src:/app/src
       - ./wishlist.json:/app/wishlist.json
+      - ./package.json:/app/package.json
+      - ./yarn.lock:/app/yarn.lock
+      - /app/node_modules
+    command: yarn start

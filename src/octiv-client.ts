@@ -182,8 +182,10 @@ export class OctivClient {
       });
       console.log(`Class ${classDateId} booked successfully.`);
     } catch (error: any) {
-      console.error(`Booking class ${classDateId} failed`);
-      throw error;
+      if (axios.isAxiosError(error)) {
+        console.log(`${error.status}: ${error.response?.data?.message}`);
+      }
+      throw new Error('Booking failed');
     }
   }
 }
