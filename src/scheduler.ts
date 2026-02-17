@@ -21,12 +21,12 @@ export class DiscoveryScheduler {
     try {
       await this.client.authenticate();
       const wishlist = await loadWishlist();
-      console.log(`Found ${wishlist.length} rules in wishlist:`);
+      console.log(`Found ${wishlist.length} outstanding rules in wishlist:`);
       console.log(JSON.stringify(wishlist, null, 2));
       const datesResult = computeStartAndEndDate(wishlist);
       if (!datesResult) {
         console.log(
-          `No rules found in wishlist. Cancelling all scheduled jobs.`,
+          `No outstanding rules found in wishlist. Cancelling all scheduled jobs.`,
         );
         for (const [scheduledId, job] of this.scheduledJobs.entries()) {
           job.cancel();
@@ -44,7 +44,6 @@ export class DiscoveryScheduler {
       console.log(
         `Found ${availableClassesForDateRange.length} classes in range:`,
       );
-      console.log(JSON.stringify(availableClassesForDateRange, null, 2));
 
       const confirmedWishlist: (WishlistRule & { id: number })[] = wishlist
         .map((rule) => {
@@ -60,7 +59,6 @@ export class DiscoveryScheduler {
       console.log(
         `Matched ${confirmedWishlist.length} classes out of ${wishlist.length} rules.`,
       );
-      console.log(JSON.stringify(confirmedWishlist, null, 2));
 
       for (const [scheduledId, job] of this.scheduledJobs.entries()) {
         const stillInWishlist = confirmedWishlist.some(

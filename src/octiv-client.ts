@@ -110,7 +110,6 @@ export class OctivClient {
       this.accessToken = loginResponse.data.access_token;
 
       if (!this.accessToken) {
-        console.error('Login response:', loginResponse.data);
         throw new Error('No token found in login response');
       }
       console.log('Authentication successful.');
@@ -123,7 +122,6 @@ export class OctivClient {
       this.locationId = meResponse.data.user_tenants?.[0]?.locations[0].id;
 
       if (!this.userId || !this.tenantId || !this.locationId) {
-        console.error('Me response:', meResponse.data);
         throw new Error('No user ID or tenant ID found in me response');
       }
       console.log(
@@ -156,7 +154,6 @@ export class OctivClient {
         },
       });
       console.log(`Classes fetched successfully:`);
-      console.log(JSON.stringify(response.data.data, null, 2));
       return response.data.data.map((item: any) => ({
         id: item.id,
         name: item.class ? item.class.name : item.name,
@@ -185,10 +182,7 @@ export class OctivClient {
       });
       console.log(`Class ${classDateId} booked successfully.`);
     } catch (error: any) {
-      console.error(
-        `Booking class ${classDateId} failed:`,
-        error.response?.data || error.message,
-      );
+      console.error(`Booking class ${classDateId} failed`);
       throw error;
     }
   }
