@@ -22,106 +22,98 @@ export class DiscoveryScheduler {
     try {
       await this.client.authenticate();
       const wishlist = await loadWishlist();
-      logger.info(`Found ${wishlist.length} outstanding rules in wishlist:`);
       const datesResult = computeStartAndEndDate(wishlist);
       if (!datesResult) {
-        logger.info(
-          `No outstanding rules found in wishlist. Cancelling all scheduled jobs.`,
-        );
-        for (const [scheduledId, job] of this.scheduledJobs.entries()) {
-          job.cancel();
-          logger.info(`Cancelled job for class ${scheduledId}`);
-        }
+        for (const [, job] of this.scheduledJobs.entries()) job.cancel();
         this.scheduledJobs.clear();
+        logger.info('Wishlist is empty — all scheduled jobs cancelled.');
         return;
       }
 
-      const availableClassesForDateRange =
-        await this.client.fetchClassesForRange(
-          datesResult.startDate,
-          datesResult.endDate,
-        );
-      logger.info(
-        `Found ${availableClassesForDateRange.length} classes in range:`,
+      const available = await this.client.fetchClassesForRange(
+        datesResult.startDate,
+        datesResult.endDate,
       );
 
-      const confirmedWishlist: (WishlistRule & { id: number; isAlreadyBooked: boolean })[] = wishlist
+      const confirmedWishlist: (WishlistRule & {
+        id: number;
+        isAlreadyBooked: boolean;
+      })[] = wishlist
         .map((rule) => {
-          const matchingClass = availableClassesForDateRange.find(
+          const match = available.find(
             (cls) =>
               cls.name === rule.className &&
               cls.date.getTime() === rule.classDateUtc.getTime(),
           );
-          return matchingClass
-            ? { ...rule, id: matchingClass.id, isAlreadyBooked: matchingClass.isAlreadyBooked }
+          return match
+            ? { ...rule, id: match.id, isAlreadyBooked: match.isAlreadyBooked }
             : null;
         })
-        .filter((item): item is WishlistRule & { id: number; isAlreadyBooked: boolean } => item !== null);
+        .filter(
+          (item): item is WishlistRule & { id: number; isAlreadyBooked: boolean } =>
+            item !== null,
+        );
 
       for (const [scheduledId, job] of this.scheduledJobs.entries()) {
-        const stillInWishlist = confirmedWishlist.some(
-          (item) => item.id === scheduledId,
-        );
-        if (!stillInWishlist) {
+        if (!confirmedWishlist.some((item) => item.id === scheduledId)) {
           job.cancel();
           this.scheduledJobs.delete(scheduledId);
         }
       }
 
-      let bookedNow = 0;
-      let scheduledNew = 0;
-      let alreadyScheduled = 0;
-      let alreadyBooked = 0;
-      const notFound = wishlist.length - confirmedWishlist.length;
+      type SummaryEntry = { icon: string; name: string; date: Date; note: string };
+      const entries: SummaryEntry[] = [];
+
+      for (const rule of wishlist) {
+        if (!confirmedWishlist.find((c) => c.classDateUtc.getTime() === rule.classDateUtc.getTime() && c.className === rule.className)) {
+          entries.push({ icon: '✗ ', name: rule.className, date: rule.classDateUtc, note: 'not found in API' });
+        }
+      }
 
       for (const item of confirmedWishlist) {
         if (item.isAlreadyBooked) {
-          alreadyBooked++;
+          entries.push({ icon: '✓ ', name: item.className, date: item.classDateUtc, note: 'already booked' });
           continue;
         }
 
         const bookingTime = subHours(item.classDateUtc, item.hoursBefore);
 
         if (bookingTime <= new Date()) {
-          logger.info(
-            `[${item.id}] ✏️ Booking "${item.className}" immediately (window opened ${format(bookingTime, 'yyyy-MM-dd HH:mm')})`,
-          );
           await this.client.bookClass(item.id.toString());
-          bookedNow++;
+          entries.push({ icon: '✅', name: item.className, date: item.classDateUtc, note: 'booked now' });
         } else {
           if (this.scheduledJobs.has(item.id)) {
-            alreadyScheduled++;
+            entries.push({ icon: '↩ ', name: item.className, date: item.classDateUtc, note: `already scheduled` });
             continue;
           }
 
           const scheduledTime = new Date(bookingTime.getTime() + 500);
           const job = schedule.scheduleJob(scheduledTime, async () => {
-            logger.info(
-              `[${item.id}] 🚀 Executing scheduled booking for "${item.className}"...`,
-            );
+            logger.info(`🚀 Booking "${item.className}" (${format(item.classDateUtc, 'EEE dd MMM HH:mm')})...`);
             await this.client.bookClass(item.id.toString());
             this.scheduledJobs.delete(item.id);
           });
           this.scheduledJobs.set(item.id, job);
-          scheduledNew++;
+          entries.push({ icon: '⏱ ', name: item.className, date: item.classDateUtc, note: `opens ${format(bookingTime, 'EEE dd MMM HH:mm')}` });
         }
       }
 
-      const sep = '─'.repeat(44);
-      const row = (icon: string, label: string, n: number, note = '') =>
-        `   ${icon}  ${label.padEnd(20)} ${String(n).padStart(2)}${note ? `  ${note}` : ''}`;
+      const rowContents = entries.length === 0
+        ? ['  —   nothing to do']
+        : entries.map((e) => {
+            const d = format(e.date, 'EEE dd MMM HH:mm');
+            // ✅ renders as 2 columns in most terminals; pad to preserve alignment
+            const icon = e.icon === '✅' ? '✅ ' : e.icon;
+            return `  ${icon}  ${e.name.padEnd(24)}${d}   ${e.note}`;
+          });
 
-      const summaryRows = [
-        ...(bookedNow        ? [row('✅', 'booked now',          bookedNow)]         : []),
-        ...(scheduledNew     ? [row('⏱ ', 'newly scheduled',     scheduledNew)]      : []),
-        ...(alreadyScheduled ? [row('↩ ', 'already scheduled',   alreadyScheduled)]  : []),
-        ...(alreadyBooked    ? [row('✓ ', 'already booked',      alreadyBooked, '(skipped)')] : []),
-        ...(notFound         ? [row('✗ ', 'not found in API',    notFound)]          : []),
-      ];
+      const TITLE = '─ Discovery ';
+      const innerWidth = Math.max(...rowContents.map((r) => r.length), 0) + 2;
+      const boxWidth = Math.max(innerWidth, TITLE.length + 4);
 
-      logger.info(`── Discovery (${wishlist.length} rule(s)) ${sep.slice(0, 44 - `Discovery (${wishlist.length} rule(s)) `.length)}`);
-      for (const r of summaryRows.length ? summaryRows : [`   —   nothing to do`]) logger.info(r);
-      logger.info(sep);
+      logger.info('┌' + TITLE + '─'.repeat(boxWidth - TITLE.length) + '┐');
+      for (const r of rowContents) logger.info('│' + r.padEnd(boxWidth) + '│');
+      logger.info('└' + '─'.repeat(boxWidth) + '┘');
     } catch (error) {
       logger.error('Discovery failed:', error);
     }

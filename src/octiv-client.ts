@@ -103,7 +103,6 @@ export class OctivClient {
     }
 
     try {
-      logger.info(`Authenticating as ${config.email}...`);
       const loginResponse = await this.client.post('/login', {
         username: config.email,
         password: config.password,
@@ -114,9 +113,7 @@ export class OctivClient {
       if (!this.accessToken) {
         throw new Error('No token found in login response');
       }
-      logger.info('Authentication successful.');
 
-      logger.debug(`Fetching me...`);
       const meResponse = await this.client.get('/users/me');
 
       this.userId = meResponse.data.id;
@@ -126,9 +123,7 @@ export class OctivClient {
       if (!this.userId || !this.tenantId || !this.locationId) {
         throw new Error('No user ID or tenant ID found in me response');
       }
-      logger.info(
-        `User details retrieved successfully. User ID: ${this.userId}, Tenant ID: ${this.tenantId}, Location ID: ${this.locationId}`,
-      );
+      logger.info(`Authenticated as ${config.email} (user ${this.userId})`);
     } catch (error: any) {
       logger.error(
         'Authentication failed:',
@@ -142,11 +137,10 @@ export class OctivClient {
     try {
       const formattedStartDate = startDate.toISOString().split('T')[0];
       const formattedEndDate = endDate.toISOString().split('T')[0];
-      logger.info(
-        `Fetching classes for range ${formattedStartDate} to ${formattedEndDate}...`,
-      );
+      logger.debug(`Fetching classes ${formattedStartDate} → ${formattedEndDate}`);
       const response = await this.client.get('/class-dates', {
         params: {
+          include: 'classBookings.user',
           'filter[tenantId]': this.tenantId,
           'filter[locationId]': this.locationId,
           'filter[between]': `${formattedStartDate},${formattedEndDate}`,
@@ -155,13 +149,13 @@ export class OctivClient {
           perPage: -1,
         },
       });
-      logger.debug(`Classes fetched successfully:`);
       return response.data.data.map((item: any) => ({
         id: item.id,
         name: item.class ? item.class.name : item.name,
         date: new Date(`${item.date}T${item.start_time}`),
         limit: item.limit,
-        isAlreadyBooked: item.bookings?.some((b: any) => b.userId === this.userId) ?? false,
+        isAlreadyBooked:
+          item.bookings?.some((b: any) => b.user_id === this.userId) ?? false,
       }));
     } catch (error: any) {
       logger.error(
@@ -178,7 +172,6 @@ export class OctivClient {
       return;
     }
     try {
-      logger.info(`[${classDateId}] ✏️ Booking class...`);
       await this.client.post('/class-bookings', {
         classDateId,
         userId: this.userId,
