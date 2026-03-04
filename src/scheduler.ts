@@ -45,68 +45,83 @@ export class DiscoveryScheduler {
         `Found ${availableClassesForDateRange.length} classes in range:`,
       );
 
-      const confirmedWishlist: (WishlistRule & { id: number })[] = wishlist
+      const confirmedWishlist: (WishlistRule & { id: number; isAlreadyBooked: boolean })[] = wishlist
         .map((rule) => {
           const matchingClass = availableClassesForDateRange.find(
             (cls) =>
               cls.name === rule.className &&
               cls.date.getTime() === rule.classDateUtc.getTime(),
           );
-          return matchingClass ? { ...rule, id: matchingClass.id } : null;
+          return matchingClass
+            ? { ...rule, id: matchingClass.id, isAlreadyBooked: matchingClass.isAlreadyBooked }
+            : null;
         })
-        .filter((item): item is WishlistRule & { id: number } => item !== null);
-
-      logger.info(
-        `Matched ${confirmedWishlist.length} classes out of ${wishlist.length} rules.`,
-      );
-      logger.info('Confirmed Wishlist:', confirmedWishlist);
+        .filter((item): item is WishlistRule & { id: number; isAlreadyBooked: boolean } => item !== null);
 
       for (const [scheduledId, job] of this.scheduledJobs.entries()) {
         const stillInWishlist = confirmedWishlist.some(
           (item) => item.id === scheduledId,
         );
         if (!stillInWishlist) {
-          logger.info(
-            `Class ${scheduledId} is no longer in the wishlist. Cancelling scheduled booking.`,
-          );
           job.cancel();
           this.scheduledJobs.delete(scheduledId);
         }
       }
 
+      let bookedNow = 0;
+      let scheduledNew = 0;
+      let alreadyScheduled = 0;
+      let alreadyBooked = 0;
+      const notFound = wishlist.length - confirmedWishlist.length;
+
       for (const item of confirmedWishlist) {
+        if (item.isAlreadyBooked) {
+          alreadyBooked++;
+          continue;
+        }
+
         const bookingTime = subHours(item.classDateUtc, item.hoursBefore);
-        logger.info(
-          `[${item.id}] Class "${item.className}" at ${format(item.classDateUtc, 'yyyy-MM-dd HH:mm:ss')} should be booked at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
-        );
 
         if (bookingTime <= new Date()) {
           logger.info(
-            `[${item.id}] Class "${item.className}" can be booked immediately. Attempting to book...`,
+            `[${item.id}] ✏️ Booking "${item.className}" immediately (window opened ${format(bookingTime, 'yyyy-MM-dd HH:mm')})`,
           );
           await this.client.bookClass(item.id.toString());
+          bookedNow++;
         } else {
           if (this.scheduledJobs.has(item.id)) {
-            logger.info(
-              `[${item.id}] Job for class "${item.className}" is already scheduled.`,
-            );
+            alreadyScheduled++;
             continue;
           }
 
-          logger.info(
-            `[${item.id}] ⏱️ Scheduling booking for class "${item.className}" at ${format(bookingTime, 'yyyy-MM-dd HH:mm:ss')}`,
-          );
           const scheduledTime = new Date(bookingTime.getTime() + 500);
           const job = schedule.scheduleJob(scheduledTime, async () => {
             logger.info(
-              `[${item.id}] 🚀 Executing scheduled booking for class "${item.className}"...`,
+              `[${item.id}] 🚀 Executing scheduled booking for "${item.className}"...`,
             );
             await this.client.bookClass(item.id.toString());
             this.scheduledJobs.delete(item.id);
           });
           this.scheduledJobs.set(item.id, job);
+          scheduledNew++;
         }
       }
+
+      const sep = '─'.repeat(44);
+      const row = (icon: string, label: string, n: number, note = '') =>
+        `   ${icon}  ${label.padEnd(20)} ${String(n).padStart(2)}${note ? `  ${note}` : ''}`;
+
+      const summaryRows = [
+        ...(bookedNow        ? [row('✅', 'booked now',          bookedNow)]         : []),
+        ...(scheduledNew     ? [row('⏱ ', 'newly scheduled',     scheduledNew)]      : []),
+        ...(alreadyScheduled ? [row('↩ ', 'already scheduled',   alreadyScheduled)]  : []),
+        ...(alreadyBooked    ? [row('✓ ', 'already booked',      alreadyBooked, '(skipped)')] : []),
+        ...(notFound         ? [row('✗ ', 'not found in API',    notFound)]          : []),
+      ];
+
+      logger.info(`── Discovery (${wishlist.length} rule(s)) ${sep.slice(0, 44 - `Discovery (${wishlist.length} rule(s)) `.length)}`);
+      for (const r of summaryRows.length ? summaryRows : [`   —   nothing to do`]) logger.info(r);
+      logger.info(sep);
     } catch (error) {
       logger.error('Discovery failed:', error);
     }

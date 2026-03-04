@@ -7,6 +7,7 @@ export interface Class {
   name: string;
   date: Date;
   limit: number;
+  isAlreadyBooked: boolean;
 }
 
 export class OctivClient {
@@ -160,6 +161,7 @@ export class OctivClient {
         name: item.class ? item.class.name : item.name,
         date: new Date(`${item.date}T${item.start_time}`),
         limit: item.limit,
+        isAlreadyBooked: item.bookings?.some((b: any) => b.userId === this.userId) ?? false,
       }));
     } catch (error: any) {
       logger.error(
