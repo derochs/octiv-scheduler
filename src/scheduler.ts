@@ -84,7 +84,7 @@ export class DiscoveryScheduler {
       if (bookingTime <= new Date()) {
         entries.push({ icon: '⏱ ', name: item.className, date: item.classDateUtc, note: 'ready to book' });
       } else if (this.scheduledJobs.has(item.id)) {
-        entries.push({ icon: '↩ ', name: item.className, date: item.classDateUtc, note: 'already scheduled' });
+        entries.push({ icon: '↩ ', name: item.className, date: item.classDateUtc, note: `scheduled ${format(bookingTime, 'EEE dd MMM HH:mm')}` });
       } else {
         entries.push({ icon: '⏱ ', name: item.className, date: item.classDateUtc, note: `opens ${format(bookingTime, 'EEE dd MMM HH:mm')}` });
       }
@@ -136,7 +136,7 @@ export class DiscoveryScheduler {
           entries.push({ icon: '✅', name: item.className, date: item.classDateUtc, note: 'booked now' });
         } else {
           if (this.scheduledJobs.has(item.id)) {
-            entries.push({ icon: '↩ ', name: item.className, date: item.classDateUtc, note: 'already scheduled' });
+            entries.push({ icon: '↩ ', name: item.className, date: item.classDateUtc, note: `scheduled ${format(bookingTime, 'EEE dd MMM HH:mm')}` });
             continue;
           }
 
