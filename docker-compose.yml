@@ -3,7 +3,6 @@ services:
     container_name: octiv-scheduler
     build:
       context: .
-      target: builder
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
@@ -14,9 +13,4 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
     volumes:
-      - ./src:/app/src
       - ./wishlist.json:/app/wishlist.json
-      - ./package.json:/app/package.json
-      - ./yarn.lock:/app/yarn.lock
-      - /app/node_modules
-    command: yarn start
