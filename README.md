@@ -7,6 +7,7 @@ Automated class booking system for Octiv Fitness.
 - 🔄 Automatically discovers and books classes based on your wishlist
 - ⏰ Schedules bookings at a specified time before class starts
 - 📋 Watches for wishlist changes and updates schedules in real-time
+- 🤖 Telegram bot for adding classes and checking status
 - 🐳 Easy deployment with Docker Compose
 
 ## Quick Start with Docker Compose
@@ -36,6 +37,8 @@ Automated class booking system for Octiv Fitness.
    export DISCOVERY_CRON="0 4 * * *"  # Optional: defaults to 4 AM daily
    export DRY_RUN=true                # Optional: defaults to true
    export TZ="Europe/Berlin"          # Optional: defaults to UTC (Important for correct time matching)
+   export TELEGRAM_BOT_TOKEN=your-token    # Optional: enables Telegram bot
+   export TELEGRAM_ALLOWED_USERS=123,456   # Optional: comma-separated chat IDs (empty = allow all)
    ```
 
    > **Note:** For production use, consider using a secrets management system or your CI/CD platform's environment variable features instead of storing credentials in files.
@@ -70,6 +73,8 @@ Automated class booking system for Octiv Fitness.
 - `DISCOVERY_CRON` - Cron schedule for discovery runs (default: `0 4 * * *` - daily at 4 AM). Scans your wishlist and schedules bookings for upcoming classes or books immediately if the booking window is already open.
 - `DRY_RUN` - Set to `true` to simulate bookings without actually booking them (default: `true`)
 - `TZ` - Timezone for the application (e.g., `Europe/Berlin`). Important to match Octiv's local class times with your wishlist. Defaults to `UTC`.
+- `TELEGRAM_BOT_TOKEN` - Bot token from [@BotFather](https://t.me/BotFather). If not set, the Telegram bot is disabled.
+- `TELEGRAM_ALLOWED_USERS` - Comma-separated list of Telegram chat IDs allowed to use the bot. If empty, anyone can use it.
 
 #### Wishlist Format
 
@@ -110,6 +115,25 @@ Simply edit `wishlist.json` - the service will automatically detect changes and 
    - If booking time has passed → books immediately
    - If booking time is in the future → schedules a job
 4. **Watching**: Monitors `wishlist.json` for changes and updates schedules accordingly
+
+## Telegram Bot
+
+An optional Telegram bot allows you to manage your wishlist and check scheduler status remotely — no need to SSH into your Pi or edit JSON files.
+
+### Setup
+
+1. Message [@BotFather](https://t.me/BotFather) on Telegram and create a new bot to get a token
+2. Set the `TELEGRAM_BOT_TOKEN` environment variable
+3. Message your bot `/start` to get your chat ID
+4. Optionally set `TELEGRAM_ALLOWED_USERS` to restrict access
+
+### Commands
+
+- `/add <date>` — Add a CrossFit Class to the wishlist. The date is in local time.
+  ```
+  /add 2026-04-01 17:15
+  ```
+- `/status` — Show the current scheduler state (scheduled bookings, already booked, etc.)
 
 ## Manual Deployment (Node.js)
 
@@ -161,4 +185,4 @@ yarn build
 
 ## Why a wishlist?
 
-Instead of offering a UI to select classes, we use a wishlist. This allows you to define your desired classes in a simple JSON file and let the scheduler handle the rest. It's a simple but effective way to automate your class bookings. It also lets you use tools such as [OpenClaw](https://openclaw.ai/) to edit the wishlist, allowing you to use a simple messaging tool to book classes.
+Instead of offering a UI to select classes, we use a wishlist. This allows you to define your desired classes in a simple JSON file and let the scheduler handle the rest. It's a simple but effective way to automate your class bookings. Combined with the Telegram bot, you can manage bookings from your phone without needing direct access to the server.
