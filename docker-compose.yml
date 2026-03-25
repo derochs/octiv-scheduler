@@ -11,6 +11,8 @@ services:
       - OCTIV_PASSWORD=${OCTIV_PASSWORD}
       - DISCOVERY_CRON=${DISCOVERY_CRON:-0 4 * * *}
       - DRY_RUN=${DRY_RUN:-true}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS}
     volumes:
       - ./src:/app/src
       - ./wishlist.json:/app/wishlist.json
