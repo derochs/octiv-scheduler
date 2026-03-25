@@ -10,6 +10,11 @@ export const config = {
   tenantId: process.env.OCTIV_TENANT_ID || '102121', // Default from notes
   locationId: process.env.OCTIV_LOCATION_ID || '1691', // Default from notes
   discoveryCron: process.env.DISCOVERY_CRON || '0 4 * * *', // Default: Daily at 04:00
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramAllowedUsers: (process.env.TELEGRAM_ALLOWED_USERS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
 };
 
 if (!config.email || !config.password) {

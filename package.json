@@ -13,11 +13,13 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "node-schedule": "^2.1.1",
+    "node-telegram-bot-api": "^0.67.0",
     "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
     "@types/node-schedule": "^2.1.8",
+    "@types/node-telegram-bot-api": "^0.64.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

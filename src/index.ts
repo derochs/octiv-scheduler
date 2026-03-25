@@ -3,12 +3,15 @@ import { config } from './config.js';
 import { logger } from './logger.js';
 import { OctivClient } from './octiv-client.js';
 import { DiscoveryScheduler } from './scheduler.js';
+import { startTelegramBot } from './telegram-bot.js';
 import { watchWishlist } from './wishlist.js';
 
 const client = new OctivClient();
 const discoveryScheduler = new DiscoveryScheduler(client);
 
 logger.info(`Octiv Booker`);
+
+startTelegramBot(discoveryScheduler);
 
 discoveryScheduler.runDiscovery();
 

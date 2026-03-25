@@ -21,9 +21,9 @@ export async function loadWishlist(): Promise<WishlistRule[]> {
       classDateUtc: new Date(rule.classDateUtc),
     }));
 
-    return rules.filter(
-      (rule) => rule.classDateUtc.getTime() > currentDate.getTime(),
-    );
+    return rules
+      .filter((rule) => rule.classDateUtc.getTime() > currentDate.getTime())
+      .sort((a, b) => a.classDateUtc.getTime() - b.classDateUtc.getTime());
   } catch (error) {
     logger.warn('Failed to load wishlist.json, using empty list.', error);
     return [];
