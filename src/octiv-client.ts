@@ -137,10 +137,12 @@ export class OctivClient {
     try {
       const formattedStartDate = startDate.toISOString().split('T')[0];
       const formattedEndDate = endDate.toISOString().split('T')[0];
-      logger.debug(`Fetching classes ${formattedStartDate} → ${formattedEndDate}`);
+      logger.debug(
+        `Fetching classes ${formattedStartDate} → ${formattedEndDate}`,
+      );
       const response = await this.client.get('/class-dates', {
         params: {
-          include: 'classBookings.user',
+          include: 'classBookings',
           'filter[tenantId]': this.tenantId,
           'filter[locationId]': this.locationId,
           'filter[between]': `${formattedStartDate},${formattedEndDate}`,
